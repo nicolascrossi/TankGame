@@ -1,8 +1,9 @@
 import pygame
 import time
 import math
+import random
 
-from pygame.constants import K_s, K_w, K_a, K_d, K_r, K_t, K_SPACE
+from pygame.constants import K_s, K_w, K_a, K_d, K_SPACE
 
 #define constants
 BLACK = (0,0,0)
@@ -11,8 +12,8 @@ RED = (255,0,0)
 GREEN = (0,255,0)
 BLUE = (0,0,255)
 
-S_HEIGHT = 400
-S_WIDTH = 400
+S_HEIGHT = 1000
+S_WIDTH = 1000
 
 pygame.init() #start pygame
 
@@ -50,12 +51,70 @@ class Tank:
     def set_turret_angle(self, degrees):
         self.turretAngle = degrees
 
-    def move(self, deltaX, deltaY):
+    def move(self, deltaX, deltaY, walls):
+        # print("")
+        # print(self.x, self.y)
+        # print(deltaX, deltaY)
+        # print("")
+        
         self.x += deltaX
+        self.update_rect()
+
+        for wall in walls:
+            while wall.colliderect(self.get_rect()):
+                if deltaX < 0:
+                    self.x += 1
+                elif deltaX > 0:
+                    self.x -= 1
+                self.update_rect()
+        
         self.y += deltaY
+        self.update_rect()
+
+        for wall in walls:
+            while wall.colliderect(self.get_rect()):
+                if deltaY < 0:
+                    self.y += 1
+                elif deltaY > 0:
+                    self.y -= 1
+                self.update_rect()
+
+        # if deltaX != 0 or deltaY != 0:
+        #     self.x += deltaX
+
+        #     self.y += deltaY
+        #     self.update_rect()
+
+        #     for wall in walls:
+        #         while wall.colliderect(self.get_rect()):
+            
+        #             if deltaX < 0:
+        #                 self.x += 1
+        #             elif deltaX > 0:
+        #                 self.x -= 1
+        #             if deltaY < 0:
+        #                 self.y += 1
+        #             elif deltaY > 0:
+        #                 self.y -= 1
+        #             self.update_rect()
+
+            # for wall in walls:
+            #     while wall.colliderect(self.get_rect()):
+            #         if deltaY < 0:
+            #             self.y += 1
+            #         elif deltaY > 0:
+            #             self.y -= 1
+            #         self.update_rect()
+            
+        for wall in walls:
+            if wall.colliderect(self.get_rect()):
+                print("Still colliding")
+
+    def update_rect(self):
+        self.get_rect().update(self.x, self.y, self.width, self.height)
 
     def get_rect(self):
-        return self.rect
+        return self.hull
 
     #Returns the angle you have to be aiming at to hit this 
     def get_angle_to_hit(self, x, y):
@@ -86,8 +145,8 @@ class Tank:
         return self.turretAngle
 
     def render(self):
-        self.rect = pygame.draw.rect(screen, self.hullColor, [self.x, self.y, self.width, self.height])
-        rectRotated(screen, self.turretColor, (self.x + 7.5, self.y - 10, 5, 20), 0, 0, self.turretAngle, (0, 10), 1)
+        self.hull = pygame.draw.rect(screen, self.hullColor, [self.x, self.y, self.width, self.height])
+        rectRotated(screen, self.turretColor, (self.x + 7.5, self.y - 10, 5, 20), 0, 0, self.turretAngle, (0, 10), 8)
 
     def fire(self):
         if time.time() - self.lastShotTime > 1:
@@ -143,20 +202,23 @@ class Shell:
                     return tank
         return None
 
+    def get_rect(self):
+        return self.rect
+
     def get_line(self):
         return Line(self.x, self.y, self.xVel, self.yVel)
 
 class Line:
 
     def __init__(self, x, y, rise, run):
-        self.x = x
-        self.y = y
+        self.x1 = x
+        self.y1 = y
         self.x2 = x + run
         self.y2 = y + rise
     
     def dist(self, x, y):
-        num = (abs((self.x2 - self.x)(self.y - y) - (self.x - x)(self.y2 - self.y)))
-        denom = (math.sqrt(((self.x2 - self.x) ** 2) + ((self.y2 - self.y) ** 2)))
+        num = abs((self.x2 - self.x1)*(self.y1 - y) - (self.x1 - x)*(self.y2 - self.y1))
+        denom = math.sqrt( ((self.x2 - self.x1) ** 2) + ((self.y2 - self.y1) ** 2) )
         return num / denom
 
 def dToR(degrees):
@@ -193,6 +255,73 @@ def rectRotated( surface, color, pos, fill, border_radius, rotation_angle, rotat
     incfromroth = (s.get_height()-sh)//2
     surface.blit( s, (pos[0]-surfcenterx+rotation_offset_center[0]+rw2-incfromrotw,pos[1]-surfcentery+rotation_offset_center[1]+rh2-incfromroth) )
         
+class Wall:
+
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.rect = pygame.Rect(x, y, width, height)
+        self.color = WHITE
+
+    def get_rect(self):
+        return self.rect
+
+    def colliderect(self, rect):
+        return self.rect.colliderect(rect)
+
+    def render(self):
+        pygame.draw.rect(screen, self.color, self.rect)
+
+def get_angle_to_hit(tX, tY, sX, sY):
+    deltaX = abs(tX - sX)
+    deltaY = abs(tY - sY)
+    
+    if deltaX == 0 or deltaY == 0:
+        return 0
+
+    if tX < sX and tY < sY:
+        angle = math.atan(deltaX/deltaY)
+        angle = rToD(angle)
+    elif tX < sX and tY > sY:
+        angle = math.atan(deltaY/deltaX)
+        angle = rToD(angle)
+        angle += 90
+    elif tX > sX and tY > sY:
+        angle = math.atan(deltaX/deltaY)
+        angle = rToD(angle)
+        angle += 180
+    else:
+        angle = math.atan(deltaY/deltaX)
+        angle = rToD(angle)
+        angle += 270
+    
+    return angle
+
+def get_vel_components(velocity, angle):
+    angle = angle % 360
+    quadrant = angle // 90
+    if quadrant == 0:
+        xVel = -1 * math.sin(dToR(angle)) * velocity
+        yVel = -1 * math.cos(dToR(angle)) * velocity
+        
+    elif quadrant == 1:
+        angle -= 90
+        yVel = math.sin(dToR(angle)) * velocity
+        xVel = -1 * math.cos(dToR(angle)) * velocity
+    
+    elif quadrant == 2:
+        angle -= 180
+        xVel = math.sin(dToR(angle)) * velocity
+        yVel = math.cos(dToR(angle)) * velocity
+
+    else:
+        angle -= 270
+        yVel = -1 * math.sin(dToR(angle)) * velocity
+        xVel = math.cos(dToR(angle)) * velocity
+
+    return (xVel, yVel)
 
 done = False #we're not done displaying
 
@@ -203,17 +332,26 @@ turretAngleVel = 0
 tank = Tank()
 tank.x = 100
 tank.y = 100
+tank.update_rect()
 
 tank2 = Tank()
 tank2.hullColor = GREEN
-tank2.x = 300
-tank2.y = 300
+tank2.x = S_WIDTH - 100
+tank2.y = S_HEIGHT - 100
+tank.update_rect()
 
 tankSpeed = 3
 turretSpeed = 2
 
 blueShells = []
 greenShells = []
+
+wall_width = 20
+walls = []
+walls.append(Wall(0, 0, wall_width, S_HEIGHT - wall_width))
+walls.append(Wall(0, S_HEIGHT - wall_width, S_WIDTH - wall_width, wall_width))
+walls.append(Wall(S_WIDTH - wall_width, wall_width, wall_width, S_HEIGHT - wall_width))
+walls.append(Wall(wall_width, 0, S_WIDTH - wall_width, wall_width))
 
 screenRect = pygame.Rect(0, 0, S_WIDTH, S_HEIGHT)
 
@@ -286,16 +424,67 @@ blueShells
 greenShells
 
 '''
+
+class Marker:
+    def __init__(self, x, y):
+        self.color = RED
+        self.x = x
+        self.y = y
+        self.width = 5
+        self.height = 5
+        self.rect = pygame.Rect(x, y, self.width, self.height)
+
+    def render(self):
+        pygame.draw.rect(screen, self.color, self.rect)
+
+markers = []
+
+class AIInfo:
+    def __init__(self):
+        self.aiDest = (random.randint(50, S_WIDTH - 50), random.randint(50, S_HEIGHT - 50))
+        self.travelTime = time.time()
+        self.aiVels = get_vel_components(tankSpeed, get_angle_to_hit(self.aiDest[0], self.aiDest[1], S_WIDTH - 100, S_HEIGHT - 100))
+
+aiInfo = AIInfo()
+
 def get_ai_actions(tank, enemy_tank, enemy_shells):
     ai = AIMove()
-    #PUT EVERYTHING IN HERE THAT YOU WANT TO HAPPEN
-    # if tank.get_x() < 380:
-    #     ai.change_x_by(10)
-    # if tank.get_y() > 10:
-    #     ai.change_y_by(-5)
-    # ai.change_turret_angle(3)
-    # ai.attempt_to_fire(True)
 
+    lines = [shell.get_line() for shell in enemy_shells]
+    
+    changed = False
+
+    for line in lines:
+        cur_dist = line.dist(tank.get_x(), tank.get_y())
+        newDest = [tank.get_x(), tank.get_y()]
+        maxDist = cur_dist
+        if cur_dist < 30:
+            for deltaX in range(-4, 5, 4):
+                for deltaY in range(-4, 5, 4):
+                    if deltaX != 0 or deltaY != 0:
+                        newDist = line.dist(tank.get_x() + deltaX, tank.get_y() + deltaY)
+                        if newDist > maxDist:
+                            newDest = [tank.get_x() + deltaX, tank.get_y() + deltaY]
+                            maxDist = newDist
+        if maxDist != cur_dist:
+            changed = True
+            markers.append(Marker(newDest[0], newDest[1]))
+            aiInfo.aiDest = tuple(newDest)
+            aiInfo.travelTime = time.time()
+            aiInfo.aiVels = get_vel_components(tankSpeed, get_angle_to_hit(aiInfo.aiDest[0], aiInfo.aiDest[1], tank.get_x(), tank.get_y()))
+
+
+    if not changed and tank.get_rect().collidepoint(aiInfo.aiDest) or time.time() - aiInfo.travelTime > 3:
+        aiInfo.aiDest = (random.randint(50, S_WIDTH - 50), random.randint(50, S_HEIGHT - 50))
+        aiInfo.travelTime = time.time()
+        aiInfo.aiVels = get_vel_components(tankSpeed, get_angle_to_hit(aiInfo.aiDest[0], aiInfo.aiDest[1], tank.get_x(), tank.get_y()))
+    else:
+        ai.change_x_by(aiInfo.aiVels[0])
+        ai.change_y_by(aiInfo.aiVels[1])
+
+    angle = get_angle_to_hit(enemy_tank.get_x(), enemy_tank.get_y(), tank.get_x(), tank.get_y())
+    ai.set_turret_angle(angle)
+    ai.attempt_to_fire(True)
 
     return ai
 
@@ -304,31 +493,36 @@ while not done:
         if event.type == pygame.QUIT: #if the user clicks the X
             done = True #now we're done displaying
         if event.type == pygame.KEYDOWN:
-            if event.key == K_t:
-                turretAngleVel -= turretSpeed
-            elif event.key == K_r:
-                turretAngleVel += turretSpeed
-            elif event.key == K_w:
+
+            if event.key == K_w:
                 yVel -= tankSpeed
-            elif event.key == K_s:
+            if event.key == K_s:
                 yVel += tankSpeed
-            elif event.key == K_a:
+            if event.key == K_a:
                 xVel -= tankSpeed
-            elif event.key == K_d:
+            if event.key == K_d:
                 xVel += tankSpeed
-            elif event.key == K_SPACE:
+            if event.key == K_SPACE:
                 shell = tank.fire()
                 if not shell is None:
                     blueShells.append(shell)
         if event.type == pygame.KEYUP:
-            if event.key == K_w or event.key == K_s:
-                yVel = 0
-            elif event.key == K_a or event.key == K_d:
-                xVel = 0
-            elif event.key == K_r or event.key == K_t:
-                turretAngleVel = 0
+            if event.key == K_w:
+                yVel += tankSpeed
+            if event.key == K_s:
+                yVel -= tankSpeed
+            if event.key == K_a:
+                xVel += tankSpeed
+            if event.key == K_d:
+                xVel -= tankSpeed
+
+        if event.type == pygame.MOUSEMOTION:
+            tank.set_turret_angle(get_angle_to_hit(event.pos[0], event.pos[1], tank.get_x(), tank.get_y()))
     
     screen.fill(BLACK)
+
+    for marker in markers:
+        marker.render()
 
     idx = 0
     while idx < len(blueShells):
@@ -358,13 +552,31 @@ while not done:
             idx += 1
         shell.render()
 
+    for wall in walls:
+        idx = 0
+        while idx < len(blueShells):
+            shell = blueShells[idx]
+            if wall.colliderect(shell.get_rect()):
+                blueShells.pop(idx)
+            else:
+                idx += 1
 
-    tank.move(xVel, yVel)
+        idx = 0
+        while idx < len(greenShells):
+            shell = greenShells[idx]
+            if wall.colliderect(shell.get_rect()):
+                greenShells.pop(idx)
+            else:
+                idx += 1
+
+        wall.render()
+
+    tank.move(xVel, yVel, walls)
     tank.turn_turret(turretAngleVel)
     tank.render()
 
     aiMove = get_ai_actions(tank2, tank, blueShells)
-    tank2.move(aiMove.deltaX, aiMove.deltaY)
+    tank2.move(aiMove.deltaX, aiMove.deltaY, walls)
     if not aiMove.turret_angle is None:
         tank2.set_turret_angle(aiMove.turret_angle)
     else:
@@ -375,8 +587,6 @@ while not done:
             greenShells.append(shell)
 
     tank2.render()
-    # pygame.draw.rect(screen, BLUE, [100, 100, 20, 35])
-    # rectRotated(screen, RED, (107.5, 95, 5, 30), 0, 0, rotation, (0, 15), 1)
 
     pygame.display.update()
 
