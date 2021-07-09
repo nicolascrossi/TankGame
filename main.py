@@ -424,8 +424,8 @@ class AIInfo:
 aiInfo = AIInfo()
 
 def check_aim(tank, enemy_tank, start_angle, angle_mod):
-    tank_pos = (tank.get_x(), tank.get_y())
-    enemy_pos = (enemy_tank.get_x(), enemy_tank.get_y())
+    tank_pos = [tank.get_x(), tank.get_y()]
+    enemy_pos = [enemy_tank.get_x(), enemy_tank.get_y()]
 
     angle = start_angle
     angle += angle_mod
@@ -434,18 +434,25 @@ def check_aim(tank, enemy_tank, start_angle, angle_mod):
     #print("angle + mod: " + str(angle))
 
     shell = tank.dummy_fire()
-    shell_pos = (shell.x, shell.y)
+    shell_pos = [shell.x, shell.y]
 
+    prev_dist = get_dist(shell_pos, enemy_pos)
+    
+    shell_pos[0] += shell.xVel
+    shell_pos[1] += shell.yVel
+    enemy_pos[0] += xVel
+    enemy_pos[1] += yVel
+    cur_dist = get_dist(shell_pos, enemy_pos)
 
-    dist_to_enemy = get_dist(tank_pos, enemy_pos)
-    frames_to_hit = dist_to_enemy / 4
+    while cur_dist < prev_dist:
+        prev_dist = cur_dist
+        shell_pos[0] += shell.xVel
+        shell_pos[1] += shell.yVel
+        enemy_pos[0] += xVel
+        enemy_pos[1] += yVel
+        cur_dist = get_dist(shell_pos, enemy_pos)
 
-    new_enemy_pos = (enemy_pos[0] + xVel * frames_to_hit, enemy_pos[1] + yVel * frames_to_hit)
-    new_shell_pos = (shell_pos[0] + shell.xVel * frames_to_hit, shell_pos[1] + shell.yVel * frames_to_hit)
-
-    shell_dist_to_enemy = get_dist(new_shell_pos, new_enemy_pos)
-
-    return shell_dist_to_enemy
+    return prev_dist
 
 def aim(tank, enemy_tank):
 
@@ -521,6 +528,8 @@ def get_ai_actions(tank, enemy_tank, enemy_shells):
 
     return ai
 
+paused = False
+
 while not done:
     for event in pygame.event.get(): #check the events list
         if event.type == pygame.QUIT: #if the user clicks the X
@@ -552,76 +561,78 @@ while not done:
         if event.type == pygame.MOUSEMOTION:
             tank.set_turret_angle(get_angle_to_hit(event.pos[0], event.pos[1], tank.get_x(), tank.get_y()))
     
-    screen.fill(BLACK)
+    if not paused:
 
-    for marker in markers:
-        marker.render()
+        screen.fill(BLACK)
 
-    idx = 0
-    while idx < len(blueShells):
-        shell = blueShells[idx]
-        shell.move()
-        tankHit = shell.check_hit([tank, tank2])
-        if not tankHit is None:
-            print( "Green was hit! Game over!")
-            done = True
-        if not screenRect.contains(shell):
-            blueShells.pop(idx)
-        else:
-            idx += 1
-        shell.render()
+        for marker in markers:
+            marker.render()
 
-    idx = 0
-    while idx < len(greenShells):
-        shell = greenShells[idx]
-        shell.move()
-        tankHit = shell.check_hit([tank, tank2])
-        if not tankHit is None:
-            print( "Blue was hit! Game over!")
-            done = True
-        if not screenRect.contains(shell):
-            greenShells.pop(idx)
-        else:
-            idx += 1
-        shell.render()
-
-    for wall in walls:
         idx = 0
         while idx < len(blueShells):
             shell = blueShells[idx]
-            if wall.colliderect(shell.get_rect()):
+            shell.move()
+            tankHit = shell.check_hit([tank, tank2])
+            if not tankHit is None:
+                print( "Green was hit! Game over!")
+                paused = True
+            if not screenRect.contains(shell):
                 blueShells.pop(idx)
             else:
                 idx += 1
+            shell.render()
 
         idx = 0
         while idx < len(greenShells):
             shell = greenShells[idx]
-            if wall.colliderect(shell.get_rect()):
+            shell.move()
+            tankHit = shell.check_hit([tank, tank2])
+            if not tankHit is None:
+                print( "Blue was hit! Game over!")
+                paused = True
+            if not screenRect.contains(shell):
                 greenShells.pop(idx)
             else:
                 idx += 1
+            shell.render()
 
-        wall.render()
+        for wall in walls:
+            idx = 0
+            while idx < len(blueShells):
+                shell = blueShells[idx]
+                if wall.colliderect(shell.get_rect()):
+                    blueShells.pop(idx)
+                else:
+                    idx += 1
 
-    tank.move(xVel, yVel, walls)
-    tank.turn_turret(turretAngleVel)
-    tank.render()
+            idx = 0
+            while idx < len(greenShells):
+                shell = greenShells[idx]
+                if wall.colliderect(shell.get_rect()):
+                    greenShells.pop(idx)
+                else:
+                    idx += 1
 
-    aiMove = get_ai_actions(tank2, tank, blueShells)
-    tank2.move(aiMove.deltaX, aiMove.deltaY, walls)
-    if not aiMove.turret_angle is None:
-        tank2.set_turret_angle(aiMove.turret_angle)
-    else:
-        tank2.turn_turret(aiMove.deltaTurretAngle)
-    if aiMove.attemptToFire:
-        shell = tank2.fire()
-        if not shell is None:
-            greenShells.append(shell)
+            wall.render()
 
-    tank2.render()
+        tank.move(xVel, yVel, walls)
+        tank.turn_turret(turretAngleVel)
+        tank.render()
 
-    pygame.display.update()
+        aiMove = get_ai_actions(tank2, tank, blueShells)
+        tank2.move(aiMove.deltaX, aiMove.deltaY, walls)
+        if not aiMove.turret_angle is None:
+            tank2.set_turret_angle(aiMove.turret_angle)
+        else:
+            tank2.turn_turret(aiMove.deltaTurretAngle)
+        if aiMove.attemptToFire:
+            shell = tank2.fire()
+            if not shell is None:
+                greenShells.append(shell)
+
+        tank2.render()
+
+        pygame.display.update()
 
 
     clock.tick(60)
