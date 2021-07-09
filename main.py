@@ -19,7 +19,7 @@ pygame.init() #start pygame
 
 screen = pygame.display.set_mode((S_WIDTH, S_HEIGHT))
 
-pygame.display.set_caption('Pygame Template')
+pygame.display.set_caption('Pygame')
 
 clock = pygame.time.Clock()
 
@@ -432,7 +432,7 @@ def get_ai_actions(tank, enemy_tank, enemy_shells):
                             maxDist = newDist
         if maxDist != cur_dist:
             changed = True
-            markers.append(Marker(newDest[0], newDest[1]))
+            # markers.append(Marker(newDest[0], newDest[1]))
             aiInfo.aiDest = tuple(newDest)
             aiInfo.travelTime = time.time()
             aiInfo.aiVels = get_vel_components(tankSpeed, get_angle_to_hit(aiInfo.aiDest[0], aiInfo.aiDest[1], tank.get_x(), tank.get_y()))
