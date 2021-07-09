@@ -52,11 +52,6 @@ class Tank:
         self.turretAngle = degrees
 
     def move(self, deltaX, deltaY, walls):
-        # print("")
-        # print(self.x, self.y)
-        # print(deltaX, deltaY)
-        # print("")
-        
         self.x += deltaX
         self.update_rect()
 
@@ -78,37 +73,6 @@ class Tank:
                 elif deltaY > 0:
                     self.y -= 1
                 self.update_rect()
-
-        # if deltaX != 0 or deltaY != 0:
-        #     self.x += deltaX
-
-        #     self.y += deltaY
-        #     self.update_rect()
-
-        #     for wall in walls:
-        #         while wall.colliderect(self.get_rect()):
-            
-        #             if deltaX < 0:
-        #                 self.x += 1
-        #             elif deltaX > 0:
-        #                 self.x -= 1
-        #             if deltaY < 0:
-        #                 self.y += 1
-        #             elif deltaY > 0:
-        #                 self.y -= 1
-        #             self.update_rect()
-
-            # for wall in walls:
-            #     while wall.colliderect(self.get_rect()):
-            #         if deltaY < 0:
-            #             self.y += 1
-            #         elif deltaY > 0:
-            #             self.y -= 1
-            #         self.update_rect()
-            
-        for wall in walls:
-            if wall.colliderect(self.get_rect()):
-                print("Still colliding")
 
     def update_rect(self):
         self.get_rect().update(self.x, self.y, self.width, self.height)
