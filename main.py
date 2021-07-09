@@ -12,7 +12,7 @@ RED = (255,0,0)
 GREEN = (0,255,0)
 BLUE = (0,0,255)
 
-S_HEIGHT = 1000
+S_HEIGHT = 900
 S_WIDTH = 1000
 
 pygame.init() #start pygame
@@ -112,8 +112,14 @@ class Tank:
         self.hull = pygame.draw.rect(screen, self.hullColor, [self.x, self.y, self.width, self.height])
         rectRotated(screen, self.turretColor, (self.x + 7.5, self.y - 10, 5, 20), 0, 0, self.turretAngle, (0, 10), 8)
 
-    def fire(self):
-        if time.time() - self.lastShotTime > 1:
+    def dummy_fire(self):
+        temp = self.lastShotTime
+        shell = self.fire(-1)
+        self.lastShotTime = temp
+        return shell
+
+    def fire(self, delay = 1):
+        if time.time() - self.lastShotTime > delay:
             shellVel = 4
             self.turretAngle = self.turretAngle % 360
             quadrant = self.turretAngle // 90
@@ -287,6 +293,12 @@ def get_vel_components(velocity, angle):
 
     return (xVel, yVel)
 
+def get_dist(pos0, pos1):
+    return get_dist_indiv(pos0[0], pos0[1], pos1[0], pos1[1])
+
+def get_dist_indiv(x0, y0, x1, y1):
+    return math.sqrt( (x0 - x1)**2 + (y0 - y1)**2 )
+
 done = False #we're not done displaying
 
 xVel = 0
@@ -411,6 +423,64 @@ class AIInfo:
 
 aiInfo = AIInfo()
 
+def check_aim(tank, enemy_tank, start_angle, angle_mod):
+    tank_pos = (tank.get_x(), tank.get_y())
+    enemy_pos = (enemy_tank.get_x(), enemy_tank.get_y())
+
+    angle = start_angle
+    angle += angle_mod
+    tank.set_turret_angle(angle)
+
+    #print("angle + mod: " + str(angle))
+
+    shell = tank.dummy_fire()
+    shell_pos = (shell.x, shell.y)
+
+
+    dist_to_enemy = get_dist(tank_pos, enemy_pos)
+    frames_to_hit = dist_to_enemy / 4
+
+    new_enemy_pos = (enemy_pos[0] + xVel * frames_to_hit, enemy_pos[1] + yVel * frames_to_hit)
+    new_shell_pos = (shell_pos[0] + shell.xVel * frames_to_hit, shell_pos[1] + shell.yVel * frames_to_hit)
+
+    shell_dist_to_enemy = get_dist(new_shell_pos, new_enemy_pos)
+
+    return shell_dist_to_enemy
+
+def aim(tank, enemy_tank):
+
+    start_angle = get_angle_to_hit(enemy_tank.get_x(), enemy_tank.get_y(), tank.get_x(), tank.get_y())
+
+    min_dist = check_aim(tank, enemy_tank, start_angle, 0)
+
+    # print("check_aim 0: " + str(min_dist))
+    # print("check_aim +1: " + str(check_aim(tank, enemy_tank, start_angle, 1)))
+    # print("check_aim -1: " + str(check_aim(tank, enemy_tank, start_angle, -1)))
+    # print("")
+
+    if check_aim(tank, enemy_tank, start_angle, 1) < min_dist:
+        #Do increasxing
+        angle_mod = 2
+        prev_dist = check_aim(tank, enemy_tank, start_angle, 1)
+        new_dist = check_aim(tank, enemy_tank, start_angle, angle_mod)
+        while prev_dist > new_dist:
+            prev_dist = new_dist
+            angle_mod += 0.5
+            new_dist = check_aim(tank, enemy_tank, start_angle, angle_mod)
+        return start_angle + angle_mod - 1
+    elif check_aim(tank, enemy_tank, start_angle, -1) < min_dist:
+        #Do decreasing
+        angle_mod = -2
+        prev_dist = check_aim(tank, enemy_tank, start_angle, -1)
+        new_dist = check_aim(tank, enemy_tank, start_angle, angle_mod)
+        while prev_dist > new_dist:
+            prev_dist = new_dist
+            angle_mod -= 0.5
+            new_dist = check_aim(tank, enemy_tank, start_angle, angle_mod)
+        return start_angle + angle_mod + 1
+    else:
+        return start_angle
+
 def get_ai_actions(tank, enemy_tank, enemy_shells):
     ai = AIMove()
 
@@ -446,8 +516,7 @@ def get_ai_actions(tank, enemy_tank, enemy_shells):
         ai.change_x_by(aiInfo.aiVels[0])
         ai.change_y_by(aiInfo.aiVels[1])
 
-    angle = get_angle_to_hit(enemy_tank.get_x(), enemy_tank.get_y(), tank.get_x(), tank.get_y())
-    ai.set_turret_angle(angle)
+    ai.set_turret_angle(aim(tank, enemy_tank))
     ai.attempt_to_fire(True)
 
     return ai
