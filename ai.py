@@ -95,7 +95,10 @@ def get_ai_actions(tank, enemy_tank, enemy_shells, aiInfo):
         ai.change_x_by(aiInfo.aiVels[0])
         ai.change_y_by(aiInfo.aiVels[1])
 
+    # Swap which line is commented if the game lags. Currently predicting where to shoot is inefficient
+    #ai.set_turret_angle(hf.get_angle_to_hit(enemy_tank.get_x(), enemy_tank.get_y(), tank.get_x(), tank.get_y()))
     ai.set_turret_angle(aim(tank, enemy_tank))
+    
     ai.attempt_to_fire(True)
 
     return ai
