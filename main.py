@@ -23,19 +23,21 @@ pygame.display.set_caption('Pygame')
 
 clock = pygame.time.Clock()
 
-
 class Tank:
 
     def __init__(self):
         self.x = 0
         self.y = 0
-        self.vel = 0
+        self.xVel = 0
+        self.yVel = 0
         self.turretAngle = 0
         self.lastShotTime = time.time()
         self.hullColor = BLUE
         self.turretColor = RED
         self.width = 20
         self.height = 20
+        self.autofire = False
+        self.tankSpeed = 4
 
         self.hull = pygame.Rect(self.x, self.y, 20, 20)
 
@@ -301,10 +303,6 @@ def get_dist_indiv(x0, y0, x1, y1):
 
 done = False #we're not done displaying
 
-xVel = 0
-yVel = 0
-turretAngleVel = 0
-
 tank = Tank()
 tank.x = 100
 tank.y = 100
@@ -315,9 +313,6 @@ tank2.hullColor = GREEN
 tank2.x = S_WIDTH - 100
 tank2.y = S_HEIGHT - 100
 tank.update_rect()
-
-tankSpeed = 3
-turretSpeed = 2
 
 blueShells = []
 greenShells = []
@@ -416,15 +411,14 @@ class Marker:
 markers = []
 
 class AIInfo:
-    def __init__(self):
+    def __init__(self, ai_tank):
         self.aiDest = (random.randint(50, S_WIDTH - 50), random.randint(50, S_HEIGHT - 50))
         self.travelTime = time.time()
-        self.aiVels = get_vel_components(tankSpeed, get_angle_to_hit(self.aiDest[0], self.aiDest[1], S_WIDTH - 100, S_HEIGHT - 100))
+        self.aiVels = get_vel_components(ai_tank.tankSpeed, get_angle_to_hit(self.aiDest[0], self.aiDest[1], S_WIDTH - 100, S_HEIGHT - 100))
 
-aiInfo = AIInfo()
+aiInfo = AIInfo(tank2)
 
 def check_aim(tank, enemy_tank, start_angle, angle_mod):
-    tank_pos = [tank.get_x(), tank.get_y()]
     enemy_pos = [enemy_tank.get_x(), enemy_tank.get_y()]
 
     angle = start_angle
@@ -440,16 +434,16 @@ def check_aim(tank, enemy_tank, start_angle, angle_mod):
     
     shell_pos[0] += shell.xVel
     shell_pos[1] += shell.yVel
-    enemy_pos[0] += xVel
-    enemy_pos[1] += yVel
+    enemy_pos[0] += enemy_tank.xVel
+    enemy_pos[1] += enemy_tank.yVel
     cur_dist = get_dist(shell_pos, enemy_pos)
 
     while cur_dist < prev_dist:
         prev_dist = cur_dist
         shell_pos[0] += shell.xVel
         shell_pos[1] += shell.yVel
-        enemy_pos[0] += xVel
-        enemy_pos[1] += yVel
+        enemy_pos[0] += enemy_tank.xVel
+        enemy_pos[1] += enemy_tank.yVel
         cur_dist = get_dist(shell_pos, enemy_pos)
 
     return prev_dist
@@ -512,13 +506,13 @@ def get_ai_actions(tank, enemy_tank, enemy_shells):
             # markers.append(Marker(newDest[0], newDest[1]))
             aiInfo.aiDest = tuple(newDest)
             aiInfo.travelTime = time.time()
-            aiInfo.aiVels = get_vel_components(tankSpeed, get_angle_to_hit(aiInfo.aiDest[0], aiInfo.aiDest[1], tank.get_x(), tank.get_y()))
+            aiInfo.aiVels = get_vel_components(tank.tankSpeed, get_angle_to_hit(aiInfo.aiDest[0], aiInfo.aiDest[1], tank.get_x(), tank.get_y()))
 
 
     if not changed and tank.get_rect().collidepoint(aiInfo.aiDest) or time.time() - aiInfo.travelTime > 3:
         aiInfo.aiDest = (random.randint(50, S_WIDTH - 50), random.randint(50, S_HEIGHT - 50))
         aiInfo.travelTime = time.time()
-        aiInfo.aiVels = get_vel_components(tankSpeed, get_angle_to_hit(aiInfo.aiDest[0], aiInfo.aiDest[1], tank.get_x(), tank.get_y()))
+        aiInfo.aiVels = get_vel_components(tank.tankSpeed, get_angle_to_hit(aiInfo.aiDest[0], aiInfo.aiDest[1], tank.get_x(), tank.get_y()))
     else:
         ai.change_x_by(aiInfo.aiVels[0])
         ai.change_y_by(aiInfo.aiVels[1])
@@ -537,29 +531,37 @@ while not done:
         if event.type == pygame.KEYDOWN:
 
             if event.key == K_w:
-                yVel -= tankSpeed
+                tank.yVel -= tank.tankSpeed
             if event.key == K_s:
-                yVel += tankSpeed
+                tank.yVel += tank.tankSpeed
             if event.key == K_a:
-                xVel -= tankSpeed
+                tank.xVel -= tank.tankSpeed
             if event.key == K_d:
-                xVel += tankSpeed
+                tank.xVel += tank.tankSpeed
             if event.key == K_SPACE:
                 shell = tank.fire()
                 if not shell is None:
                     blueShells.append(shell)
         if event.type == pygame.KEYUP:
             if event.key == K_w:
-                yVel += tankSpeed
+                tank.yVel += tank.tankSpeed
             if event.key == K_s:
-                yVel -= tankSpeed
+                tank.yVel -= tank.tankSpeed
             if event.key == K_a:
-                xVel += tankSpeed
+                tank.xVel += tank.tankSpeed
             if event.key == K_d:
-                xVel -= tankSpeed
+                tank.xVel -= tank.tankSpeed
 
         if event.type == pygame.MOUSEMOTION:
             tank.set_turret_angle(get_angle_to_hit(event.pos[0], event.pos[1], tank.get_x(), tank.get_y()))
+        
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                shell = tank.fire()
+                if not shell is None:
+                    blueShells.append(shell)
+            if event.button == 3:
+                tank.autofire = not tank.autofire
     
     if not paused:
 
@@ -567,6 +569,11 @@ while not done:
 
         for marker in markers:
             marker.render()
+
+        if tank.autofire:
+            shell = tank.fire()
+            if not shell is None:
+                blueShells.append(shell)
 
         idx = 0
         while idx < len(blueShells):
@@ -615,11 +622,12 @@ while not done:
 
             wall.render()
 
-        tank.move(xVel, yVel, walls)
-        tank.turn_turret(turretAngleVel)
+        tank.move(tank.xVel, tank.yVel, walls)
         tank.render()
 
         aiMove = get_ai_actions(tank2, tank, blueShells)
+        tank2.xVel = aiMove.deltaX
+        tank2.yVel = aiMove.deltaY
         tank2.move(aiMove.deltaX, aiMove.deltaY, walls)
         if not aiMove.turret_angle is None:
             tank2.set_turret_angle(aiMove.turret_angle)
