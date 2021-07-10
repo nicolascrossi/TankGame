@@ -32,16 +32,16 @@ clock = pygame.time.Clock()
 tank = Tank(screen)
 tank.hull_color = BLUE
 tank.turret_color = RED
-tank.x = 100
-tank.y = 100
+tank.set_x(100)
+tank.set_y(100)
 tank.update_rect()
 
 # Create the AI tank
 tank2 = Tank(screen)
 tank2.hull_color = GREEN
 tank2.turret_color = RED
-tank2.x = S_WIDTH - 100
-tank2.y = S_HEIGHT - 100
+tank2.set_x(S_WIDTH - 100)
+tank2.set_y(S_HEIGHT - 100)
 tank.update_rect()
 
 #aiInfo = AIInfo(tank2, S_WIDTH, S_HEIGHT) # Stores values for the AI
