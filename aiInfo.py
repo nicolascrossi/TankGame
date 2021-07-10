@@ -1,8 +1,13 @@
 import random
 import time
-from typing import NewType
 
 import helperFunctions as hf
+
+'''
+Deprecated
+
+Merged with the AI class
+'''
 
 class AIInfo:
     def __init__(self, ai_tank, screen_width, screen_height):
@@ -19,3 +24,6 @@ class AIInfo:
 
     def reset_travel_time(self):
         self.travelTime = time.time()
+    
+    def get_screen_dim(self):
+        return (self.screen_width, self.screen_width)

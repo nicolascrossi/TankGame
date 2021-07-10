@@ -1,104 +1,158 @@
 import time
+import random
 
 import helperFunctions as hf
 from aiMove import AIMove
 
-def check_aim(tank, enemy_tank, start_angle, angle_mod):
-    enemy_pos = [enemy_tank.get_x(), enemy_tank.get_y()]
+class AI:
 
-    angle = start_angle
-    angle += angle_mod
-    tank.set_turret_angle(angle)
+    def __init__(self, ai_tank, enemy_tank, enemy_shells, screen_width, screen_height):
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        
+        self.ai_tank = ai_tank
+        self.enemy_tank = enemy_tank
+        self.enemy_shells = enemy_shells
 
-    shell = tank.dummy_fire()
-    shell_pos = [shell.x, shell.y]
+        self.ai_dest = [0, 0]
+        self.ai_vels = [0.0, 0.0]
+        self.travel_time = 0.0
+        self.new_dest()
+        self.reset_travel_time()
 
-    prev_dist = hf.get_dist(shell_pos, enemy_pos)
+    def new_dest(self):
+        self.ai_dest = (random.randint(50, self.screen_width - 50), random.randint(50, self.screen_height - 50))
+        self.ai_vels = hf.get_vel_components(self.ai_tank.tankSpeed, hf.get_angle_to_hit(self.ai_dest[0], self.ai_dest[1], self.screen_width - 100, self.screen_height - 100))
+
+    def reset_travel_time(self):
+        self.travel_time = time.time()
     
-    shell_pos[0] += shell.xVel
-    shell_pos[1] += shell.yVel
-    enemy_pos[0] += enemy_tank.xVel
-    enemy_pos[1] += enemy_tank.yVel
-    cur_dist = hf.get_dist(shell_pos, enemy_pos)
+    def get_screen_dim(self):
+        return (self.screen_width, self.screen_width)
 
-    while cur_dist < prev_dist:
-        prev_dist = cur_dist
+    def within_bounds(self, pos):
+        x, y = pos
+        return not (x < 0 or x > self.screen_width or y < 0 or y > self.screen_height)
+
+    def check_aim(self, start_angle, angle_mod):
+        enemy_pos = [self.enemy_tank.get_x(), self.enemy_tank.get_y()]
+
+        angle = start_angle
+        angle += angle_mod
+        self.ai_tank.set_turret_angle(angle)
+
+        shell = self.ai_tank.dummy_fire()
+        shell_pos = [shell.x, shell.y]
+
+        prev_dist = hf.get_dist(shell_pos, enemy_pos)
+        
         shell_pos[0] += shell.xVel
         shell_pos[1] += shell.yVel
-        enemy_pos[0] += enemy_tank.xVel
-        enemy_pos[1] += enemy_tank.yVel
+        enemy_pos[0] += self.enemy_tank.xVel
+        enemy_pos[1] += self.enemy_tank.yVel
         cur_dist = hf.get_dist(shell_pos, enemy_pos)
 
-    return prev_dist
+        while cur_dist < prev_dist and self.within_bounds(enemy_pos) and self.within_bounds(shell_pos):
+            prev_dist = cur_dist
+            shell_pos[0] += shell.xVel
+            shell_pos[1] += shell.yVel
+            enemy_pos[0] += self.enemy_tank.xVel
+            enemy_pos[1] += self.enemy_tank.yVel
+            cur_dist = hf.get_dist(shell_pos, enemy_pos)
 
-def aim(tank, enemy_tank):
+        return prev_dist
 
-    start_angle = hf.get_angle_to_hit(enemy_tank.get_x(), enemy_tank.get_y(), tank.get_x(), tank.get_y())
+    def aim(self, increment, fine_increment):
 
-    min_dist = check_aim(tank, enemy_tank, start_angle, 0)
+        start_angle = hf.get_angle_to_hit(self.enemy_tank.get_x(), self.enemy_tank.get_y(), self.ai_tank.get_x(), self.ai_tank.get_y())
 
+        min_dist = self.check_aim(start_angle, 0)
 
-    if check_aim(tank, enemy_tank, start_angle, 1) < min_dist:
-        # Do increasing
-        angle_mod = 2
-        prev_dist = check_aim(tank, enemy_tank, start_angle, 1)
-        new_dist = check_aim(tank, enemy_tank, start_angle, angle_mod)
-        while prev_dist > new_dist:
+        if self.check_aim(start_angle, increment) < min_dist:
+            # Do increasing
+
+            # Gross adjustment
+            angle_mod = increment * 2
+            prev_dist = self.check_aim(start_angle, increment)
+            new_dist = self.check_aim(start_angle, angle_mod)
+            while prev_dist > new_dist:
+                prev_dist = new_dist
+                angle_mod += increment
+                new_dist = self.check_aim(start_angle, angle_mod)
+
+            # Fine adjustment
             prev_dist = new_dist
-            angle_mod += 0.5
-            new_dist = check_aim(tank, enemy_tank, start_angle, angle_mod)
-        return start_angle + angle_mod - 1
-    elif check_aim(tank, enemy_tank, start_angle, -1) < min_dist:
-        # Do decreasing
-        angle_mod = -2
-        prev_dist = check_aim(tank, enemy_tank, start_angle, -1)
-        new_dist = check_aim(tank, enemy_tank, start_angle, angle_mod)
-        while prev_dist > new_dist:
+            angle_mod -= fine_increment
+            new_dist = self.check_aim(start_angle, angle_mod)
+            while prev_dist > new_dist:
+                prev_dist = new_dist
+                angle_mod -= fine_increment
+                new_dist = self.check_aim(start_angle, angle_mod)
+
+            return start_angle + angle_mod + fine_increment
+        elif self.check_aim(start_angle, -increment) < min_dist:
+            # Do decreasing
+
+            # Gross adjustment
+            angle_mod = -increment * 2
+            prev_dist = self.check_aim(start_angle, -increment)
+            new_dist = self.check_aim(start_angle, angle_mod)
+            while prev_dist > new_dist:
+                prev_dist = new_dist
+                angle_mod -= increment
+                new_dist = self.check_aim(start_angle, angle_mod)
+
+            # Fine adjustment
             prev_dist = new_dist
-            angle_mod -= 0.5
-            new_dist = check_aim(tank, enemy_tank, start_angle, angle_mod)
-        return start_angle + angle_mod + 1
-    else:
-        return start_angle
+            angle_mod += fine_increment
+            new_dist = self.check_aim(start_angle, angle_mod)
+            while prev_dist > new_dist:
+                prev_dist = new_dist
+                angle_mod += fine_increment
+                new_dist = self.check_aim(start_angle, angle_mod)
 
-def get_ai_actions(tank, enemy_tank, enemy_shells, aiInfo):
-    ai = AIMove()
+            return start_angle + angle_mod - fine_increment
+        else:
+            return start_angle
 
-    lines = [shell.get_line() for shell in enemy_shells]
-    
-    changed = False
+    def get_ai_actions(self):
+        ai = AIMove()
 
-    for line in lines:
-        cur_dist = line.dist(tank.get_x(), tank.get_y())
-        newDest = [tank.get_x(), tank.get_y()]
-        maxDist = cur_dist
-        if cur_dist < 30:
-            for deltaX in range(-4, 5, 4):
-                for deltaY in range(-4, 5, 4):
-                    if deltaX != 0 or deltaY != 0:
-                        newDist = line.dist(tank.get_x() + deltaX, tank.get_y() + deltaY)
-                        if newDist > maxDist:
-                            newDest = [tank.get_x() + deltaX, tank.get_y() + deltaY]
-                            maxDist = newDist
-        if maxDist != cur_dist:
-            changed = True
-            # markers.append(Marker(newDest[0], newDest[1]))
-            aiInfo.aiDest = tuple(newDest)
-            aiInfo.travelTime = time.time()
-            aiInfo.aiVels = hf.get_vel_components(tank.tankSpeed, hf.get_angle_to_hit(aiInfo.aiDest[0], aiInfo.aiDest[1], tank.get_x(), tank.get_y()))
+        lines = [shell.get_line() for shell in self.enemy_shells]
+        
+        changed = False
+
+        for line in lines:
+            cur_dist = line.dist(self.ai_tank.get_x(), self.ai_tank.get_y())
+            newDest = [self.ai_tank.get_x(), self.ai_tank.get_y()]
+            maxDist = cur_dist
+            if cur_dist < 30:
+                for deltaX in range(-4, 5, 4):
+                    for deltaY in range(-4, 5, 4):
+                        if deltaX != 0 or deltaY != 0:
+                            newDist = line.dist(self.ai_tank.get_x() + deltaX, self.ai_tank.get_y() + deltaY)
+                            if newDist > maxDist:
+                                newDest = [self.ai_tank.get_x() + deltaX, self.ai_tank.get_y() + deltaY]
+                                maxDist = newDist
+            if maxDist != cur_dist:
+                changed = True
+                # markers.append(Marker(newDest[0], newDest[1]))
+                self.reset_travel_time()
+                self.ai_dest = tuple(newDest)
+                self.ai_vels = hf.get_vel_components(self.ai_tank.tankSpeed, hf.get_angle_to_hit(self.ai_dest[0], self.ai_dest[1], self.ai_tank.get_x(), self.ai_tank.get_y()))
 
 
-    if not changed and tank.get_rect().collidepoint(aiInfo.aiDest) or time.time() - aiInfo.travelTime > 3:
-        aiInfo.new_dest()
-        aiInfo.reset_travel_time()
-    else:
-        ai.change_x_by(aiInfo.aiVels[0])
-        ai.change_y_by(aiInfo.aiVels[1])
+        if not changed and self.ai_tank.get_rect().collidepoint(self.ai_dest) or time.time() - self.travel_time > 3:
+            self.new_dest()
+            self.reset_travel_time()
+        else:
+            ai.change_x_by(self.ai_vels[0])
+            ai.change_y_by(self.ai_vels[1])
 
-    # Swap which line is commented if the game lags. Currently predicting where to shoot is inefficient
-    #ai.set_turret_angle(hf.get_angle_to_hit(enemy_tank.get_x(), enemy_tank.get_y(), tank.get_x(), tank.get_y()))
-    ai.set_turret_angle(aim(tank, enemy_tank))
-    
-    ai.attempt_to_fire(True)
+        # Swap which line is commented if the game lags. Currently predicting where to shoot is inefficient
+        #ai.set_turret_angle(hf.get_angle_to_hit(enemy_tank.get_x(), enemy_tank.get_y(), tank.get_x(), tank.get_y()))
+        ai.set_turret_angle(self.aim(2, 0.5))
+        
+        ai.attempt_to_fire(True)
 
-    return ai
+        return ai
