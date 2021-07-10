@@ -9,22 +9,23 @@ from ai import AI
 from pygame.constants import K_s, K_w, K_a, K_d, K_SPACE
 
 # Define constants
-BLACK = (0,0,0)
-WHITE = (255,255,255)
-RED = (255,0,0)
-GREEN = (0,255,0)
-BLUE = (0,0,255)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 
 S_HEIGHT = 900
 S_WIDTH = 1000
 
-pygame.init() # Start pygame
+pygame.init()  # Start pygame
 
-screen = pygame.display.set_mode((S_WIDTH, S_HEIGHT)) # Create the screen
+screen = pygame.display.set_mode((S_WIDTH, S_HEIGHT))  # Create the screen
 
-screenRect = pygame.Rect(0, 0, S_WIDTH, S_HEIGHT) # Create the rect used to check if a shell is on screen
+# Create the rect used to check if a shell is on screen
+screenRect = pygame.Rect(0, 0, S_WIDTH, S_HEIGHT)
 
-pygame.display.set_caption('Tank Game') 
+pygame.display.set_caption('Tank Game')
 
 clock = pygame.time.Clock()
 
@@ -46,27 +47,29 @@ tank.update_rect()
 
 #aiInfo = AIInfo(tank2, S_WIDTH, S_HEIGHT) # Stores values for the AI
 
-blueShells = [] # Player shells
-greenShells = [] # AI shells
+blueShells = []  # Player shells
+greenShells = []  # AI shells
 
-walls = [] # All the walls
+walls = []  # All the walls
 
-ai = AI(tank2, tank, blueShells, S_WIDTH, S_HEIGHT) # Represents the AI
+ai = AI(tank2, tank, blueShells, S_WIDTH, S_HEIGHT)  # Represents the AI
 
 # Create the border walls
 wall_width = 20
 walls.append(Wall(0, 0, wall_width, S_HEIGHT - wall_width, screen))
-walls.append(Wall(0, S_HEIGHT - wall_width, S_WIDTH - wall_width, wall_width, screen))
-walls.append(Wall(S_WIDTH - wall_width, wall_width, wall_width, S_HEIGHT - wall_width, screen))
+walls.append(Wall(0, S_HEIGHT - wall_width, S_WIDTH -
+             wall_width, wall_width, screen))
+walls.append(Wall(S_WIDTH - wall_width, wall_width,
+             wall_width, S_HEIGHT - wall_width, screen))
 walls.append(Wall(wall_width, 0, S_WIDTH - wall_width, wall_width, screen))
 
-done = False #we're not done displaying
-paused = False # Whether the rendering is paused
+done = False  # we're not done displaying
+paused = False  # Whether the rendering is paused
 
 while not done:
-    for event in pygame.event.get(): #check the events list
-        if event.type == pygame.QUIT: #if the user clicks the X
-            done = True #now we're done displaying
+    for event in pygame.event.get():  # check the events list
+        if event.type == pygame.QUIT:  # if the user clicks the X
+            done = True  # now we're done displaying
         if event.type == pygame.KEYDOWN:
             if event.key == K_w:
                 tank.change_vels(0, -tank.get_speed())
@@ -79,28 +82,29 @@ while not done:
 
             if event.key == K_d:
                 tank.change_vels(tank.get_speed(), 0)
-            
+
             if event.key == K_SPACE:
                 shell = tank.fire()
                 if shell:
                     blueShells.append(shell)
-        
+
         if event.type == pygame.KEYUP:
             if event.key == K_w:
                 tank.change_vels(0, tank.get_speed())
-            
+
             if event.key == K_s:
                 tank.change_vels(0, -tank.get_speed())
-            
+
             if event.key == K_a:
                 tank.change_vels(tank.get_speed(), 0)
-            
+
             if event.key == K_d:
                 tank.change_vels(-tank.get_speed(), 0)
 
         if event.type == pygame.MOUSEMOTION:
-            tank.set_turret_angle(hf.get_angle_to_hit(event.pos[0], event.pos[1], tank.get_x(), tank.get_y()))
-        
+            tank.set_turret_angle(hf.get_angle_to_hit(
+                event.pos[0], event.pos[1], tank.get_x(), tank.get_y()))
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 shell = tank.fire()
@@ -108,7 +112,7 @@ while not done:
                     blueShells.append(shell)
             if event.button == 3:
                 tank.autofire = not tank.autofire
-    
+
     if not paused:
 
         screen.fill(BLACK)
@@ -127,7 +131,7 @@ while not done:
             tankHit = shell.check_hit([tank, tank2])
             if tankHit:
                 blueShells.pop(idx)
-                print( "Green was hit! Game over!")
+                print("Green was hit! Game over!")
                 paused = True
             elif not screenRect.contains(shell):
                 blueShells.pop(idx)
@@ -143,7 +147,7 @@ while not done:
             tankHit = shell.check_hit([tank, tank2])
             if tankHit:
                 greenShells.pop(idx)
-                print( "Blue was hit! Game over!")
+                print("Blue was hit! Game over!")
                 paused = True
             elif not screenRect.contains(shell):
                 greenShells.pop(idx)

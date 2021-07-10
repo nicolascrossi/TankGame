@@ -5,6 +5,7 @@ import math
 import helperFunctions as hf
 from shell import Shell
 
+
 class Tank:
 
     def __init__(self, screen):
@@ -74,8 +75,10 @@ class Tank:
         return self.hull
 
     def render(self):
-        self.hull = pygame.draw.rect(self.screen, self.hull_color, [self.x, self.y, self.width, self.height])
-        hf.rectRotated(self.screen, self.turret_color, (self.x + 7.5, self.y - 10, 5, 20), 0, 0, self.turret_angle, (0, 10), 8)
+        self.hull = pygame.draw.rect(self.screen, self.hull_color, [
+                                     self.x, self.y, self.width, self.height])
+        hf.rectRotated(self.screen, self.turret_color, (self.x + 7.5,
+                       self.y - 10, 5, 20), 0, 0, self.turret_angle, (0, 10), 8)
 
     def move(self, walls):
 
@@ -89,7 +92,7 @@ class Tank:
                 elif self.x_vel > 0:
                     self.x -= 1
                 self.update_rect()
-        
+
         self.y += self.y_vel
         self.update_rect()
 
@@ -107,7 +110,7 @@ class Tank:
         self.last_shot_time = temp
         return shell
 
-    def fire(self, delay = 1):
+    def fire(self, delay=1):
         if time.time() - self.last_shot_time > delay:
 
             self.turret_angle = self.turret_angle % 360
@@ -116,12 +119,12 @@ class Tank:
             if quadrant == 0:
                 x_vel = -1 * math.sin(hf.dToR(angle)) * self.shell_vel
                 y_vel = -1 * math.cos(hf.dToR(angle)) * self.shell_vel
-                
+
             elif quadrant == 1:
                 angle -= 90
                 y_vel = math.sin(hf.dToR(angle)) * self.shell_vel
                 x_vel = -1 * math.cos(hf.dToR(angle)) * self.shell_vel
-            
+
             elif quadrant == 2:
                 angle -= 180
                 x_vel = math.sin(hf.dToR(angle)) * self.shell_vel
@@ -131,8 +134,8 @@ class Tank:
                 angle -= 270
                 y_vel = -1 * math.sin(hf.dToR(angle)) * self.shell_vel
                 x_vel = math.cos(hf.dToR(angle)) * self.shell_vel
-            
+
             self.last_shot_time = time.time()
             return Shell(self.x + self.width / 2, self.y + self.height / 2, x_vel, y_vel, self, self.screen)
-        
+
         return None

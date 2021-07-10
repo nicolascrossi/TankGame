@@ -1,6 +1,7 @@
 import pygame
 from line import Line
 
+
 class Shell:
 
     def __init__(self, x, y, x_vel, y_vel, friendly, screen):
@@ -24,7 +25,8 @@ class Shell:
         self.y += self.y_vel
 
     def render(self):
-        self.rect = pygame.draw.rect(self.screen, (255, 255, 255), [self.x, self.y, 2, 2])
+        self.rect = pygame.draw.rect(
+            self.screen, (255, 255, 255), [self.x, self.y, 2, 2])
 
     def check_hit(self, tanks):
         for tank in tanks:

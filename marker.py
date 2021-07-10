@@ -1,5 +1,6 @@
 import pygame
 
+
 class Marker:
     def __init__(self, x, y, color, screen):
         self.color = color
