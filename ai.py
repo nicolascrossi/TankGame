@@ -37,6 +37,7 @@ class AI:
         x, y = pos
         return not (x < 0 or x > self.screen_width or y < 0 or y > self.screen_height)
 
+    # TODO: Add something to account for walls
     def check_aim(self, start_angle, angle_mod):
         enemy_pos = [self.enemy_tank.get_x(), self.enemy_tank.get_y()]
 
