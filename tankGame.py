@@ -2,10 +2,9 @@ import pygame
 
 from tank import Tank
 from wall import Wall
-from aiInfo import AIInfo
 
 import helperFunctions as hf
-import ai
+from ai import AI
 
 from pygame.constants import K_s, K_w, K_a, K_d, K_SPACE
 
@@ -45,12 +44,14 @@ tank2.x = S_WIDTH - 100
 tank2.y = S_HEIGHT - 100
 tank.update_rect()
 
-aiInfo = AIInfo(tank2, S_WIDTH, S_HEIGHT) # Stores values for the AI
+#aiInfo = AIInfo(tank2, S_WIDTH, S_HEIGHT) # Stores values for the AI
 
 blueShells = [] # Player shells
 greenShells = [] # AI shells
 
 walls = [] # All the walls
+
+ai = AI(tank2, tank, blueShells, S_WIDTH, S_HEIGHT) # Represents the AI
 
 # Create the border walls
 wall_width = 20
@@ -77,7 +78,7 @@ while not done:
                 tank.xVel += tank.tankSpeed
             if event.key == K_SPACE:
                 shell = tank.fire()
-                if not shell is None:
+                if shell:
                     blueShells.append(shell)
         if event.type == pygame.KEYUP:
             if event.key == K_w:
@@ -95,7 +96,7 @@ while not done:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 shell = tank.fire()
-                if not shell is None:
+                if shell:
                     blueShells.append(shell)
             if event.button == 3:
                 tank.autofire = not tank.autofire
@@ -104,39 +105,45 @@ while not done:
 
         screen.fill(BLACK)
 
+        # Check if autofire is on, try to shoot if so
         if tank.autofire:
             shell = tank.fire()
-            if not shell is None:
+            if shell:
                 blueShells.append(shell)
 
+        # Check if blue's bullets have hit anything
         idx = 0
         while idx < len(blueShells):
             shell = blueShells[idx]
             shell.move()
             tankHit = shell.check_hit([tank, tank2])
-            if not tankHit is None:
+            if tankHit:
+                blueShells.pop(idx)
                 print( "Green was hit! Game over!")
                 paused = True
-            if not screenRect.contains(shell):
+            elif not screenRect.contains(shell):
                 blueShells.pop(idx)
             else:
                 idx += 1
             shell.render()
 
+        # Check if green's bullets have hit anything
         idx = 0
         while idx < len(greenShells):
             shell = greenShells[idx]
             shell.move()
             tankHit = shell.check_hit([tank, tank2])
-            if not tankHit is None:
+            if tankHit:
+                greenShells.pop(idx)
                 print( "Blue was hit! Game over!")
                 paused = True
-            if not screenRect.contains(shell):
+            elif not screenRect.contains(shell):
                 greenShells.pop(idx)
             else:
                 idx += 1
             shell.render()
 
+        # Check if any shells are colliding with walls and render the wall
         for wall in walls:
             idx = 0
             while idx < len(blueShells):
@@ -156,10 +163,13 @@ while not done:
 
             wall.render()
 
+        # Move and render the tank
         tank.move(tank.xVel, tank.yVel, walls)
         tank.render()
 
-        aiMove = ai.get_ai_actions(tank2, tank, blueShells, aiInfo)
+        # Get the AIMove object representing the AI's actions
+        aiMove = ai.get_ai_actions()
+
         tank2.xVel = aiMove.deltaX
         tank2.yVel = aiMove.deltaY
         tank2.move(aiMove.deltaX, aiMove.deltaY, walls)
@@ -169,7 +179,7 @@ while not done:
             tank2.turn_turret(aiMove.deltaTurretAngle)
         if aiMove.attemptToFire:
             shell = tank2.fire()
-            if not shell is None:
+            if shell:
                 greenShells.append(shell)
 
         tank2.render()
