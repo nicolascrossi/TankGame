@@ -65,31 +65,6 @@ class Tank:
     def get_rect(self):
         return self.hull
 
-    #Returns the angle you have to be aiming at to hit this 
-    def get_angle_to_hit(self, x, y):
-        
-        deltaX = abs(self.x - x)
-        deltaY = abs(self.y - y)
-        
-        # Top left
-        if self.x < x and self.y < y:
-            angle = math.atan(deltaX/deltaY)
-            angle = hf.rToD(angle)
-        elif self.x < x and self.y > y:
-            angle = math.atan(deltaY/deltaX)
-            angle = hf.rToD(angle)
-            angle += 90
-        elif self.x > x and self.y > y:
-            angle = math.atan(deltaX/deltaY)
-            angle = hf.rToD(angle)
-            angle += 180
-        else:
-            angle = math.atan(deltaY/deltaX)
-            angle = hf.rToD(angle)
-            angle += 270
-        
-        return angle
-
     def get_turret_angle(self):
         self.turretAngle = self.turretAngle % 360
         return self.turretAngle
