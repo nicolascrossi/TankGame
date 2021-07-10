@@ -3,19 +3,25 @@ from line import Line
 
 class Shell:
 
-    def __init__(self, x, y, xVel, yVel, friendly, screen):
+    def __init__(self, x, y, x_vel, y_vel, friendly, screen):
         self.friendly = friendly
         self.x = x
         self.y = y
-        self.xVel = xVel
-        self.yVel = yVel
+        self.x_vel = x_vel
+        self.y_vel = y_vel
 
         self.screen = screen
         self.rect = pygame.Rect(self.x, self.y, 2, 2)
 
+    def get_pos(self):
+        return (self.x, self.y)
+
+    def get_vels(self):
+        return (self.x_vel, self.y_vel)
+
     def move(self):
-        self.x += self.xVel
-        self.y += self.yVel
+        self.x += self.x_vel
+        self.y += self.y_vel
 
     def render(self):
         self.rect = pygame.draw.rect(self.screen, (255, 255, 255), [self.x, self.y, 2, 2])
@@ -31,4 +37,4 @@ class Shell:
         return self.rect
 
     def get_line(self):
-        return Line(self.x, self.y, self.xVel, self.yVel)
+        return Line(self.x, self.y, self.x_vel, self.y_vel)

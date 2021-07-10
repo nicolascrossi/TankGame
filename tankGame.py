@@ -30,16 +30,16 @@ clock = pygame.time.Clock()
 
 # Create the player tank
 tank = Tank(screen)
-tank.hullColor = BLUE
-tank.turretColor = RED
+tank.hull_color = BLUE
+tank.turret_color = RED
 tank.x = 100
 tank.y = 100
 tank.update_rect()
 
 # Create the AI tank
 tank2 = Tank(screen)
-tank2.hullColor = GREEN
-tank2.turretColor = RED
+tank2.hull_color = GREEN
+tank2.turret_color = RED
 tank2.x = S_WIDTH - 100
 tank2.y = S_HEIGHT - 100
 tank.update_rect()
@@ -69,26 +69,34 @@ while not done:
             done = True #now we're done displaying
         if event.type == pygame.KEYDOWN:
             if event.key == K_w:
-                tank.yVel -= tank.tankSpeed
+                tank.change_vels(0, -tank.get_speed())
+
             if event.key == K_s:
-                tank.yVel += tank.tankSpeed
+                tank.change_vels(0, tank.get_speed())
+
             if event.key == K_a:
-                tank.xVel -= tank.tankSpeed
+                tank.change_vels(-tank.get_speed(), 0)
+
             if event.key == K_d:
-                tank.xVel += tank.tankSpeed
+                tank.change_vels(tank.get_speed(), 0)
+            
             if event.key == K_SPACE:
                 shell = tank.fire()
                 if shell:
                     blueShells.append(shell)
+        
         if event.type == pygame.KEYUP:
             if event.key == K_w:
-                tank.yVel += tank.tankSpeed
+                tank.change_vels(0, tank.get_speed())
+            
             if event.key == K_s:
-                tank.yVel -= tank.tankSpeed
+                tank.change_vels(0, -tank.get_speed())
+            
             if event.key == K_a:
-                tank.xVel += tank.tankSpeed
+                tank.change_vels(tank.get_speed(), 0)
+            
             if event.key == K_d:
-                tank.xVel -= tank.tankSpeed
+                tank.change_vels(-tank.get_speed(), 0)
 
         if event.type == pygame.MOUSEMOTION:
             tank.set_turret_angle(hf.get_angle_to_hit(event.pos[0], event.pos[1], tank.get_x(), tank.get_y()))
@@ -164,20 +172,19 @@ while not done:
             wall.render()
 
         # Move and render the tank
-        tank.move(tank.xVel, tank.yVel, walls)
+        tank.move(walls)
         tank.render()
 
         # Get the AIMove object representing the AI's actions
-        aiMove = ai.get_ai_actions()
-
-        tank2.xVel = aiMove.deltaX
-        tank2.yVel = aiMove.deltaY
-        tank2.move(aiMove.deltaX, aiMove.deltaY, walls)
-        if not aiMove.turret_angle is None:
-            tank2.set_turret_angle(aiMove.turret_angle)
+        ai_move = ai.get_ai_actions()
+        deltas = ai_move.get_deltas()
+        tank2.set_vels(deltas[0], deltas[1])
+        tank2.move(walls)
+        if not ai_move.get_turret_angle() is None:
+            tank2.set_turret_angle(ai_move.get_turret_angle())
         else:
-            tank2.turn_turret(aiMove.deltaTurretAngle)
-        if aiMove.attemptToFire:
+            tank2.turn_turret(deltas[2])
+        if ai_move.get_attempt_to_fire():
             shell = tank2.fire()
             if shell:
                 greenShells.append(shell)

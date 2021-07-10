@@ -22,7 +22,7 @@ class AI:
 
     def new_dest(self):
         self.ai_dest = (random.randint(50, self.screen_width - 50), random.randint(50, self.screen_height - 50))
-        self.ai_vels = hf.get_vel_components(self.ai_tank.tankSpeed, hf.get_angle_to_hit(self.ai_dest[0], self.ai_dest[1], self.screen_width - 100, self.screen_height - 100))
+        self.ai_vels = hf.get_vel_components(self.ai_tank.get_speed(), hf.get_angle_to_hit(self.ai_dest[0], self.ai_dest[1], self.screen_width - 100, self.screen_height - 100))
 
     def reset_travel_time(self):
         self.travel_time = time.time()
@@ -42,22 +42,22 @@ class AI:
         self.ai_tank.set_turret_angle(angle)
 
         shell = self.ai_tank.dummy_fire()
-        shell_pos = [shell.x, shell.y]
+        shell_pos = list(shell.get_pos())
 
         prev_dist = hf.get_dist(shell_pos, enemy_pos)
         
-        shell_pos[0] += shell.xVel
-        shell_pos[1] += shell.yVel
-        enemy_pos[0] += self.enemy_tank.xVel
-        enemy_pos[1] += self.enemy_tank.yVel
+        shell_pos[0] += shell.get_vels()[0]
+        shell_pos[1] += shell.get_vels()[1]
+        enemy_pos[0] += self.enemy_tank.get_vels()[0]
+        enemy_pos[1] += self.enemy_tank.get_vels()[1]
         cur_dist = hf.get_dist(shell_pos, enemy_pos)
 
         while cur_dist < prev_dist and self.within_bounds(enemy_pos) and self.within_bounds(shell_pos):
             prev_dist = cur_dist
-            shell_pos[0] += shell.xVel
-            shell_pos[1] += shell.yVel
-            enemy_pos[0] += self.enemy_tank.xVel
-            enemy_pos[1] += self.enemy_tank.yVel
+            shell_pos[0] += shell.get_vels()[0]
+            shell_pos[1] += shell.get_vels()[1]
+            enemy_pos[0] += self.enemy_tank.get_vels()[0]
+            enemy_pos[1] += self.enemy_tank.get_vels()[1]
             cur_dist = hf.get_dist(shell_pos, enemy_pos)
 
         return prev_dist
@@ -139,7 +139,7 @@ class AI:
                 # markers.append(Marker(newDest[0], newDest[1]))
                 self.reset_travel_time()
                 self.ai_dest = tuple(newDest)
-                self.ai_vels = hf.get_vel_components(self.ai_tank.tankSpeed, hf.get_angle_to_hit(self.ai_dest[0], self.ai_dest[1], self.ai_tank.get_x(), self.ai_tank.get_y()))
+                self.ai_vels = hf.get_vel_components(self.ai_tank.get_speed(), hf.get_angle_to_hit(self.ai_dest[0], self.ai_dest[1], self.ai_tank.get_x(), self.ai_tank.get_y()))
 
 
         if not changed and self.ai_tank.get_rect().collidepoint(self.ai_dest) or time.time() - self.travel_time > 3:
@@ -153,6 +153,6 @@ class AI:
         #ai.set_turret_angle(hf.get_angle_to_hit(enemy_tank.get_x(), enemy_tank.get_y(), tank.get_x(), tank.get_y()))
         ai.set_turret_angle(self.aim(2, 0.5))
         
-        ai.attempt_to_fire(True)
+        ai.set_attempt_to_fire(True)
 
         return ai
