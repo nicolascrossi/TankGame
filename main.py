@@ -5,6 +5,11 @@ import random
 
 from pygame.constants import K_s, K_w, K_a, K_d, K_SPACE
 
+'''
+OUT OF DATE:
+use tankGame.py
+'''
+
 #define constants
 BLACK = (0,0,0)
 WHITE = (255,255,255)
@@ -32,8 +37,8 @@ class Tank:
         self.yVel = 0
         self.turretAngle = 0
         self.lastShotTime = time.time()
-        self.hullColor = BLUE
-        self.turretColor = RED
+        self.hullColor = (255, 255, 255)
+        self.turretColor = (0, 0, 0)
         self.width = 20
         self.height = 20
         self.autofire = False
