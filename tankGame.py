@@ -130,9 +130,11 @@ while not done:
             shell.move()
             tankHit = shell.check_hit([tank, tank2])
             if tankHit:
+                tankHit.hp -= 1
                 blueShells.pop(idx)
-                print("Green was hit! Game over!")
-                paused = True
+                if tankHit.hp <= 0:
+                    print("Green was hit! Game over!")
+                    paused = True
             elif not screenRect.contains(shell):
                 blueShells.pop(idx)
             else:
@@ -146,9 +148,11 @@ while not done:
             shell.move()
             tankHit = shell.check_hit([tank, tank2])
             if tankHit:
+                tankHit.hp -= 1
                 greenShells.pop(idx)
-                print("Blue was hit! Game over!")
-                paused = True
+                if tankHit.hp <= 0:
+                    print("Blue was hit! Game over!")
+                    paused = True
             elif not screenRect.contains(shell):
                 greenShells.pop(idx)
             else:

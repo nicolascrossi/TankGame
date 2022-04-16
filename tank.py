@@ -23,6 +23,7 @@ class Tank:
         self.tank_speed = 4
         self.screen = screen
         self.shell_vel = 4
+        self.hp = 1
 
         self.hull = pygame.Rect(self.x, self.y, 20, 20)
 
