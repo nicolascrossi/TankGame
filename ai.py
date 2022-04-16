@@ -25,7 +25,7 @@ class AI:
         self.ai_dest = (random.randint(50, self.screen_width - 50),
                         random.randint(50, self.screen_height - 50))
         self.ai_vels = hf.get_vel_components(self.ai_tank.get_speed(), hf.get_angle_to_hit(
-            self.ai_dest[0], self.ai_dest[1], self.screen_width - 100, self.screen_height - 100))
+            self.ai_dest[0], self.ai_dest[1], self.ai_tank.get_x(), self.ai_tank.get_y()))
 
     def reset_travel_time(self):
         self.travel_time = time.time()
@@ -135,11 +135,9 @@ class AI:
                 for deltaX in range(-4, 5, 4):
                     for deltaY in range(-4, 5, 4):
                         if deltaX != 0 or deltaY != 0:
-                            newDist = line.dist(self.ai_tank.get_x(
-                            ) + deltaX, self.ai_tank.get_y() + deltaY)
+                            newDist = line.dist(self.ai_tank.get_x() + deltaX, self.ai_tank.get_y() + deltaY)
                             if newDist > maxDist:
-                                newDest = [self.ai_tank.get_x(
-                                ) + deltaX, self.ai_tank.get_y() + deltaY]
+                                newDest = [self.ai_tank.get_x() + deltaX, self.ai_tank.get_y() + deltaY]
                                 maxDist = newDist
             if maxDist != cur_dist:
                 changed = True
