@@ -33,9 +33,9 @@ class AI:
     def get_screen_dim(self):
         return (self.screen_width, self.screen_width)
 
-    def within_bounds(self, pos):
+    def within_bounds(self, pos, edge):
         x, y = pos
-        return not (x < 0 or x > self.screen_width or y < 0 or y > self.screen_height)
+        return not (x < 0 + edge or x > self.screen_width - edge or y < 0 + edge or y > self.screen_height - edge)
 
     # TODO: Add something to account for walls
     def check_aim(self, start_angle, angle_mod):
@@ -56,7 +56,7 @@ class AI:
         enemy_pos[1] += self.enemy_tank.get_vels()[1]
         cur_dist = hf.get_dist(shell_pos, enemy_pos)
 
-        while cur_dist < prev_dist and self.within_bounds(enemy_pos) and self.within_bounds(shell_pos):
+        while cur_dist < prev_dist and self.within_bounds(enemy_pos, 0) and self.within_bounds(shell_pos, 0):
             prev_dist = cur_dist
             shell_pos[0] += shell.get_vels()[0]
             shell_pos[1] += shell.get_vels()[1]
@@ -68,8 +68,7 @@ class AI:
 
     def aim(self, increment, fine_increment):
 
-        start_angle = hf.get_angle_to_hit(self.enemy_tank.get_x(
-        ), self.enemy_tank.get_y(), self.ai_tank.get_x(), self.ai_tank.get_y())
+        start_angle = hf.get_angle_to_hit(self.enemy_tank.get_x(), self.enemy_tank.get_y(), self.ai_tank.get_x(), self.ai_tank.get_y())
 
         min_dist = self.check_aim(start_angle, 0)
 
@@ -135,13 +134,13 @@ class AI:
                 for deltaX in range(-4, 5, 4):
                     for deltaY in range(-4, 5, 4):
                         if deltaX != 0 or deltaY != 0:
-                            newDist = line.dist(self.ai_tank.get_x() + deltaX, self.ai_tank.get_y() + deltaY)
-                            if newDist > maxDist:
-                                newDest = [self.ai_tank.get_x() + deltaX, self.ai_tank.get_y() + deltaY]
+                            new_pos = [self.ai_tank.get_x() + deltaX, self.ai_tank.get_y() + deltaY]
+                            newDist = line.dist(new_pos[0], new_pos[1])
+                            if newDist > maxDist and self.within_bounds(new_pos, 20):
+                                newDest = new_pos
                                 maxDist = newDist
             if maxDist != cur_dist:
                 changed = True
-                # markers.append(Marker(newDest[0], newDest[1]))
                 self.reset_travel_time()
                 self.ai_dest = tuple(newDest)
                 self.ai_vels = hf.get_vel_components(self.ai_tank.get_speed(), hf.get_angle_to_hit(
